@@ -5,6 +5,7 @@ Core RAG pipeline: parsing, chunking, indexing, retrieval, and generation.
 All heavy lifting lives here; app.py handles only Streamlit UI.
 """
 
+import gc
 import io
 import base64
 import logging
@@ -149,7 +150,6 @@ def parse_and_chunk_pdfs(
     Yields (log_message, new_docs, new_image_store_delta, new_table_store_delta)
     so callers can surface progress messages incrementally.
     """
-    converter     = build_docling_converter()
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
@@ -160,15 +160,21 @@ def parse_and_chunk_pdfs(
         logger.info("Starting parse: [%s] -> %s", label, pdf_path.name)
         yield f"📄 Parsing **{pdf_path.name}**…", [], {}, {}
 
+        # Fresh converter per PDF — releasing it after each doc prevents
+        # cumulative memory growth that OOM-kills the process on large papers.
+        converter = build_docling_converter()
         try:
             result = converter.convert(str(pdf_path))
         except Exception as exc:
             msg = f"❌ Failed to parse {pdf_path.name}: {exc}"
             logger.error(msg)
             yield msg, [], {}, {}
+            del converter
+            gc.collect()
             continue
 
-        doc      = result.document
+        doc = result.document
+        del result  # free raw conversion result immediately
         new_docs: list[Document] = []
         img_delta: dict[str, str] = {}
         tbl_delta: dict[str, str] = {}
@@ -219,9 +225,20 @@ def parse_and_chunk_pdfs(
                 if pil_image is None:
                     logger.debug("[%s] No image data for figure %d p%d", label, img_idx, page_num)
                     continue
+                # Resize large figures before encoding: full-res PNG can be
+                # several MB per image; 800px JPEG is plenty for the vision
+                # LLM and in-UI display, and saves ~10x memory.
+                max_w = 800
+                if pil_image.width > max_w:
+                    ratio = max_w / pil_image.width
+                    pil_image = pil_image.resize(
+                        (max_w, int(pil_image.height * ratio))
+                    )
                 buf = io.BytesIO()
-                pil_image.save(buf, format="PNG")
+                pil_image.save(buf, format="JPEG", quality=85)
                 b64_str = base64.b64encode(buf.getvalue()).decode()
+                buf.close()
+                del pil_image
                 img_delta[image_id] = b64_str
 
                 yield (
@@ -268,6 +285,11 @@ def parse_and_chunk_pdfs(
             f"  📝 Text chunks: **{len(chunks)}**",
             new_docs, {}, {},
         )
+
+        # Explicitly free the Docling document tree and converter before the
+        # next PDF — these hold 100s of MB for large papers.
+        del doc, converter
+        gc.collect()
 
 
 # ─── Indexing ─────────────────────────────────────────────────────────────────
