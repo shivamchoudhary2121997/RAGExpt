@@ -1,4 +1,4 @@
-# RAGExpt — Multimodal RAG with Sources, Citations & Memory
+# RAGExpt: Multimodal RAG with Sources, Citations & Memory
 
 A Streamlit demo for **Retrieval-Augmented Generation** over PDF documents.  
 Powered by [Docling](https://github.com/DS4SD/docling) for multimodal parsing (text + tables + figures), [Chroma](https://www.trychroma.com/) for vector storage, [HuggingFace Embeddings](https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2), and [Groq](https://groq.com/) for LLM inference.
