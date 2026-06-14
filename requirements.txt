@@ -20,7 +20,11 @@ opentelemetry-proto>=1.12.0
 opentelemetry-exporter-otlp-proto-grpc>=1.12.0
 
 # ── PDF parsing ───────────────────────────────────────────────────────────────
-docling>=2.5.0
+# docling-slim[standard] provides all PDF/table/figure parsing but omits the
+# OCR extras (rapidocr, easyocr) which hard-depend on full opencv-python.
+# Full opencv-python requires libGL + libgthread system libs absent on
+# Streamlit Cloud. Since rag_pipeline.py sets do_ocr=False this is no loss.
+docling-slim[standard]>=2.92.0
 
 # ── Embeddings ────────────────────────────────────────────────────────────────
 sentence-transformers>=3.0.0
@@ -29,4 +33,3 @@ transformers>=4.40.0
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 Pillow>=10.0.0
-opencv-python-headless>=4.8.0  # headless avoids the libGL.so.1 system dep that breaks Streamlit Cloud
