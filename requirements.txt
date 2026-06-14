@@ -11,7 +11,13 @@ langchain-huggingface>=0.0.3
 langchain-text-splitters>=0.2.0
 
 # ── Vector store ──────────────────────────────────────────────────────────────
-chromadb>=1.0.0                # 1.x dropped the broken opentelemetry/protobuf dep
+chromadb>=1.0.0
+
+# ── OpenTelemetry (chromadb dependency) ───────────────────────────────────────
+# opentelemetry-proto 1.11.x ships stale _pb2.py files that crash with
+# protobuf >=4.x on Python 3.12+. Pin to >=1.12.0 where protos were regenerated.
+opentelemetry-proto>=1.12.0
+opentelemetry-exporter-otlp-proto-grpc>=1.12.0
 
 # ── PDF parsing ───────────────────────────────────────────────────────────────
 docling>=2.5.0
