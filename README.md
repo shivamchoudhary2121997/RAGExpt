@@ -31,6 +31,15 @@ RAGExpt/
 ```
 
 ---
+### 📖 Experiment Source Documents for notebooks
+The system indexes and structures context frames using the following documents stored in the local project scope:
+
+| Document ID | Paper Title | Core Scope | Target File |
+| :--- | :--- | :--- | :--- |
+| **Vaswani et al.** | *Attention Is All You Need* | Transformer Architecture, Self-Attention Mechanisms | `1706.03762v7.pdf` |
+| **Lewis et al.** | *Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks* | Hybrid Parametric/Non-Parametric Vector Memory Mapping | `2005.11401v4.pdf` |
+| **Brown et al.** | *Language Models are Few-Shot Learners* | GPT-3 In-Context Learning Scaling Laws | `2005.14165v4.pdf` |
+---
 
 ## Local Setup
 
