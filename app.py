@@ -249,6 +249,17 @@ def render_indexing() -> None:
             flush_logs()
 
     # Indexing
+    if not all_docs:
+        st.error(
+            "❌ No content was extracted from your PDFs — all files failed to parse. "
+            "Check the logs above for details (common cause: a missing system library). "
+            "If you see a `libGL` error, make sure `packages.txt` contains `libgl1`."
+        )
+        if st.button("⬅️ Back to Setup"):
+            reset_session()
+            st.rerun()
+        st.stop()
+
     logs.append(f"🗄️ Indexing **{len(all_docs)}** document chunks into vector store…")
     flush_logs()
     prog_bar.progress(85, text="Indexing into Chroma…")
