@@ -101,7 +101,7 @@ def render_setup() -> None:
     # ── PDF uploads ───────────────────────────────────────────────────────────
     st.subheader("📄 Upload PDFs")
     uploaded = st.file_uploader(
-        "Choose up to 3 PDF files",
+        "Choose up to 3 PDF files (Each PDF should be smaller than 2 MB)",
         type=["pdf"],
         accept_multiple_files=True,
         help="Maximum 3 PDFs; each is parsed with Docling (tables + figures extracted).",
@@ -209,6 +209,16 @@ def render_indexing() -> None:
         "The pipeline is running. Logs appear below as each stage completes."
     )
 
+    # Guard: if indexing already finished, just show the button — don't re-parse
+    if st.session_state.vector_store is not None:
+        st.success(
+            f"Indexed **{st.session_state.total_docs}** chunks. "
+            "Click below to start chatting!"
+        )
+        if st.button("💬 Go to Chat", type="primary"):
+            st.session_state.screen = "chat"
+        return
+
     log_area  = st.empty()
     prog_bar  = st.progress(0, text="Starting…")
 
@@ -224,13 +234,12 @@ def render_indexing() -> None:
     def flush_logs():
         log_area.markdown(
             "<div style='font-family:monospace;font-size:0.85em;'>"
-            + "<br>".join(logs[-60:])   # show last 60 lines
+            + "<br>".join(logs[-60:])
             + "</div>",
             unsafe_allow_html=True,
         )
 
-    # Parsing + chunking
-    total_steps = n_pdfs * 3  # tables, images, text per PDF
+    total_steps = n_pdfs * 3
     step        = 0
 
     for pdf_idx, pdf_path in enumerate(pdf_paths):
@@ -248,7 +257,6 @@ def render_indexing() -> None:
             prog_bar.progress(pct, text=msg.replace("**", "").replace("*", ""))
             flush_logs()
 
-    # Indexing
     if not all_docs:
         st.error(
             "❌ No content was extracted from your PDFs — all files failed to parse. "
@@ -282,7 +290,6 @@ def render_indexing() -> None:
     )
     if st.button("💬 Go to Chat", type="primary"):
         st.session_state.screen = "chat"
-        st.rerun()
 
 
 def render_source(doc) -> None:
@@ -353,7 +360,6 @@ def render_chat() -> None:
     # Input
     query = st.chat_input("Ask a question about your documents…")
     if query:
-        # Show user message immediately
         with st.chat_message("user"):
             st.markdown(query)
 
@@ -375,7 +381,6 @@ def render_chat() -> None:
             for doc in retrieved_docs:
                 render_source(doc)
 
-        # Update history
         st.session_state.chat_history.append({"role": "user", "content": query})
         st.session_state.chat_history.append({
             "role":    "assistant",
